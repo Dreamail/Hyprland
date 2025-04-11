@@ -2,6 +2,7 @@
   lib,
   stdenv,
   stdenvAdapters,
+  fetchpatch,
   pkg-config,
   pkgconf,
   makeWrapper,
@@ -66,6 +67,12 @@
   ];
 
   customStdenv = foldl' (acc: adapter: adapter acc) stdenv adapters;
+
+  xwayland-patch = fetchpatch {
+    name = "xwayland-hidpi-xprop.patch";
+    url = "https://aur.archlinux.org/cgit/aur.git/plain/hidpi.patch?h=xorg-xwayland-hidpi-xprop";
+    hash = "sha256-wAsBSyp0B52jC586lDWBV6TTkLuQqEr3juOEus83GTo=";
+  };
 in
   assert assertMsg (!nvidiaPatches) "The option `nvidiaPatches` has been removed.";
   assert assertMsg (!enableNvidiaPatches) "The option `enableNvidiaPatches` has been removed.";
@@ -142,7 +149,7 @@ in
           wayland-scanner
           xorg.libXcursor
         ]
-        (optionals customStdenv.hostPlatform.isBSD [ epoll-shim ])
+        (optionals customStdenv.hostPlatform.isBSD [epoll-shim])
         (optionals customStdenv.hostPlatform.isMusl [libexecinfo])
         (optionals enableXWayland [
           xorg.libxcb
@@ -150,7 +157,9 @@ in
           xorg.xcbutilerrors
           xorg.xcbutilrenderutil
           xorg.xcbutilwm
-          xwayland
+          (xwayland.overrideAttrs {
+            patches = [xwayland-patch];
+          })
         ])
         (optional withSystemd systemd)
       ];
